@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Consumo Energético Integral</title>
+    
+    <style>
+        /* ======================================= */
+        /* === ESTILOS CSS === */
+        /* ======================================= */
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e6f7ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            width: 95%;
+            max-width: 700px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #004d99;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        .apartado-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            align-items: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .apartado-item input {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            flex-grow: 1;
+            min-width: 0;
+        }
+        
+        .apartado-item input[type="text"] {
+            flex-basis: 35%; 
+        }
+
+        .apartado-item input[type="number"] {
+            flex-basis: 25%;
+            text-align: right;
+        }
+
+        .apartado-item button {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            flex-basis: 10%;
+            line-height: 1; /* Para centrar el ícono */
+        }
+
+        #agregar-aparato {
+            width: 100%;
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        #agregar-aparato:hover {
+            background-color: #1e7e34;
+        }
+
+        #calcular-total {
+            width: 100%;
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+        
+        #calcular-total:hover {
+            background-color: #0056b3;
+        }
+
+        .resultado-total {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e9f7ef;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #c3e6cb;
+        }
+
+        .resultado-total h2 {
+            color: #28a745;
+            margin-top: 0;
+        }
+        
+        .resultado-total p {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .etiquetas-header {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            padding: 0 10px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .etiquetas-header span {
+             flex-basis: 25%;
+             text-align: center;
+        }
+        
+        .etiquetas-header span:nth-child(1) {
+            flex-basis: 35%;
+            text-align: left;
+        }
+        
+        .etiquetas-header span:nth-child(4) {
+            flex-basis: 10%;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏡 Consumo Total del Hogar (kWh)</h1>
+        
+        <button id="agregar-aparato">➕ Agregar Nuevo Aparato</button>
+
+        <div class="etiquetas-header">
+            <span>Aparato/Dispositivo</span>
+            <span title="Potencia en vatios">Potencia (W)</span>
+            <span title="Horas de uso al día">Horas/Día</span>
+            <span>Acción</span>
+        </div>
+        
+        <div id="lista-aparatos">
+            </div>
+        
+        <button id="calcular-total" onclick="calcularTotalConsumo()">Calcular Consumo Total Diario</button>
+        
+        <div class="resultado-total">
+            <h2>Consumo Diario Estimado:</h2>
+            <p id="consumoTotal">0.000 kWh/día</p>
+        </div>
+    </div>
+
+    <script>
+        /* ======================================= */
+        /* === FUNCIONALIDAD JAVASCRIPT === */
+        /* ======================================= */
+        
+        document.addEventListener('DOMContentLoaded', (event) => {
+            // Inicializa la lista con aparatos de ejemplo al cargar la página
+            agregarAparato('Nevera', 150, 24); 
+            agregarAparato('Televisor', 120, 5);
+            agregarAparato('Foco LED (x4)', 40, 6);
+        });
+
+        // Función principal para agregar una nueva fila de aparato al formulario
+        function agregarAparato(nombre = '', potencia = '', horas = '') {
+            const lista = document.getElementById('lista-aparatos');
+            
+            // Crea el div contenedor para el aparato
+            const divAparato = document.createElement('div');
+            divAparato.className = 'apartado-item';
+
+            // Campos de entrada
+            divAparato.innerHTML = `
+                <input type="text" placeholder="Nombre (Ej: Nevera)" value="${nombre}" class="nombre-aparato">
+                <input type="number" placeholder="W" value="${potencia}" min="1" class="potencia-aparato">
+                <input type="number" placeholder="Horas" value="${horas}" min="0" max="24" step="0.1" class="horas-uso">
+                <button onclick="eliminarAparato(this)">🗑️</button>
+            `;
+            
+            lista.appendChild(divAparato);
+        }
+
+        // Función para eliminar un aparato
+        function eliminarAparato(btn) {
+            // Elimina el div contenedor padre del botón
+            btn.parentNode.remove();
+            // Recalcula el total automáticamente al eliminar
+            calcularTotalConsumo();
+        }
+
+        // Función para calcular el consumo total de todos los aparatos
+        function calcularTotalConsumo() {
+            let consumoTotalKwh = 0;
+            let tieneErrores = false;
+            const items = document.querySelectorAll('.apartado-item');
+
+            items.forEach(item => {
+                const potenciaInput = item.querySelector('.potencia-aparato');
+                const horasInput = item.querySelector('.horas-uso');
+                
+                const potencia = parseFloat(potenciaInput.value);
+                const horas = parseFloat(horasInput.value);
+                
+                // Restablecer el estilo de borde por defecto
+                item.style.border = '1px solid #dee2e6';
+
+                // **Validación de Datos**
+                if (isNaN(potencia) || isNaN(horas) || potencia <= 0 || horas < 0 || horas > 24) {
+                    // Marcar el ítem con error visualmente
+                    item.style.border = '2px solid #dc3545'; 
+                    tieneErrores = true;
+                    // Mantenemos el "return" aquí para que salte al siguiente item del forEach
+                    return;
+                }
+                
+                // Fórmula de cálculo: (W * h) / 1000 = kWh
+                const consumoKwh = (potencia * horas) / 1000;
+                consumoTotalKwh += consumoKwh;
+            });
+
+            const resultadoElemento = document.getElementById('consumoTotal');
+
+            if (tieneErrores) {
+                resultadoElemento.innerHTML = '⚠️ **Error:** Revisa los valores en rojo. Deben ser positivos, y las horas entre 0 y 24.';
+                resultadoElemento.style.color = '#dc3545';
+            } else if (items.length === 0) {
+                resultadoElemento.innerHTML = 'Añade al menos un aparato para calcular.';
+                resultadoElemento.style.color = '#333';
+            } else {
+                // Mostrar el resultado final
+                resultadoElemento.innerHTML = `${consumoTotalKwh.toFixed(3)} kWh/día`;
+                resultadoElemento.style.color = '#28a745';
+            }
+        }
+
+        // Asignar la función agregarAparato al botón "Agregar Nuevo Aparato"
+        document.getElementById('agregar-aparato').addEventListener('click', () => agregarAparato());
+    </script>
+</body>
+</html>
