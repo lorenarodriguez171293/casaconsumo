@@ -1,296 +1,632 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Consumo Energético Integral</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>App Energías Alternativas - Calculadora Integral</title>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- html2pdf.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <!-- html2pdf.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+    :root{
+        --bg:#e6f7ff;
+        --card:#ffffff;
+        --primary:#007bff;
+        --success:#28a745;
+        --muted:#666;
+    }
+    [data-theme="dark"]{
+        --bg:#0f1724;
+        --card:#0b1220;
+        --primary:#3b82f6;
+        --success:#16a34a;
+        --muted:#bbb;
+    }
 
-    <style>
-        /* === ESTILOS ORIGINALES (SE MANTIENEN) === */
+    *{box-sizing:border-box}
+    body{
+        margin:0;
+        font-family: Inter, Arial, Helvetica, sans-serif;
+        background:var(--bg);
+        color:var(--muted);
+        padding:20px;
+        display:flex;
+        justify-content:center;
+    }
 
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #e6f7ff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px 0;
-        }
+    .app {
+        width:100%;
+        max-width:1100px;
+        background:var(--card);
+        border-radius:12px;
+        padding:22px;
+        box-shadow:0 10px 30px rgba(2,6,23,0.12);
+    }
 
-        .container {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-            width: 95%;
-            max-width: 800px;
-        }
+    header{
+        display:flex;
+        gap:12px;
+        align-items:center;
+        justify-content:space-between;
+    }
 
-        h1 {
-            text-align: center;
-            color: #004d99;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-        }
+    h1{margin:0;color:var(--primary)}
+    .controls {display:flex;gap:10px;align-items:center;}
+    .btn {
+        border:0;
+        padding:10px 14px;
+        border-radius:8px;
+        cursor:pointer;
+        color:white;
+        font-weight:600;
+    }
+    .btn.primary{background:var(--primary)}
+    .btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,0,0,0.06)}
+    .grid {
+        display:grid;
+        grid-template-columns: 1fr 420px;
+        gap:18px;
+        margin-top:18px;
+    }
 
-        .apartado-item {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 10px;
-            align-items: center;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }
+    /* left column */
+    .panel{
+        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+        border-radius:10px;
+        padding:14px;
+        border:1px solid rgba(0,0,0,0.04);
+    }
 
-        .apartado-item input {
-            padding: 8px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            flex-grow: 1;
-        }
+    .apartado-item{display:flex;gap:10px;align-items:center;margin-bottom:10px;padding:10px;background:rgba(255,255,255,0.02);border-radius:8px}
+    .apartado-item input[type="text"], .apartado-item input[type="number"]{
+        padding:8px;border-radius:6px;border:1px solid #ccc;flex:1;
+        background:transparent;color:inherit;
+    }
+    .apartado-item button{background:#dc3545;color:#fff;border:0;padding:8px 10px;border-radius:6px;cursor:pointer}
 
-        .apartado-item button {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-        }
+    label.small{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
 
-        #agregar-aparato,
-        #calcular-total,
-        #exportarPDF,
-        #compartirWhatsApp {
-            width: 100%;
-            padding: 12px;
-            margin-top: 15px;
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-            border: none;
-            font-size: 16px;
-        }
+    .row{display:flex;gap:10px;align-items:center}
+    select, input[type="number"], input[type="text"]{
+        padding:8px;border-radius:6px;border:1px solid #ccc;background:transparent;color:inherit;
+    }
 
-        #agregar-aparato { background-color: #28a745; }
-        #calcular-total { background-color: #007bff; }
-        #exportarPDF { background-color: #6f42c1; }
-        #compartirWhatsApp { background-color: #25d366; }
+    .resultado-total{margin-top:12px;padding:12px;border-radius:8px;background:rgba(0,128,0,0.04);border:1px solid rgba(40,167,69,0.12)}
+    .resultado-total h2{margin:0;color:var(--success)}
+    .small-muted{font-size:13px;color:var(--muted)}
 
-        .resultado-total {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #e9f7ef;
-            border-radius: 10px;
-            border: 1px solid #c3e6cb;
-            text-align: center;
-        }
+    /* right column */
+    .right-col {display:flex;flex-direction:column;gap:12px}
+    canvas{background:transparent;border-radius:8px;padding:8px}
 
-        .extra-section {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f1f8ff;
-            border-radius: 10px;
-            border: 1px solid #bcdffb;
-        }
+    .extra-section{padding:10px;border-radius:8px;background:rgba(0,0,0,0.02)}
 
-        h2 {
-            color: #004d99;
-        }
-    </style>
+    footer {margin-top:16px;display:flex;gap:10px;justify-content:flex-end;}
+
+    .toggle {display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+    .badge {background:#f0f0f0;padding:6px 8px;border-radius:8px;font-size:13px}
+
+    @media (max-width:980px){
+        .grid{grid-template-columns:1fr; }
+        .right-col{order:2}
+    }
+</style>
 </head>
-
 <body>
-<div class="container" id="contentToExport">
+<div class="app" id="app" data-theme="light">
 
-    <h1>🏡 Consumo Total del Hogar (kWh)</h1>
+    <header>
+        <div>
+            <h1>🌞 App Energías Alternativas — Calculadora Integral</h1>
+            <div class="small-muted">Provincia / Subregión / Empresa / Segmento (Opción B)</div>
+        </div>
 
-    <button id="agregar-aparato">➕ Agregar Nuevo Aparato</button>
+        <div class="controls">
+            <div class="toggle">
+                <label class="small-muted">Modo oscuro</label>
+                <input id="toggleTheme" type="checkbox" />
+            </div>
+            <button class="btn primary" id="exportarPDF">📄 Exportar PDF</button>
+        </div>
+    </header>
 
-    <div id="lista-aparatos"></div>
+    <div style="height:12px"></div>
 
-    <button id="calcular-total" onclick="calcularTotalConsumo()">Calcular Consumo Total Diario</button>
+    <div class="grid">
+        <!-- LEFT: Inputs & lista aparatos -->
+        <div>
+            <div class="panel">
+                <h3>1) Datos de ubicación y tarifa</h3>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+                    <div style="flex:1;min-width:160px">
+                        <label class="small-muted">Provincia</label>
+                        <select id="provinciaSelect"></select>
+                    </div>
+                    <div style="flex:1;min-width:160px">
+                        <label class="small-muted">Subregión / Ciudad</label>
+                        <select id="regionSelect"></select>
+                    </div>
+                    <div style="flex:1;min-width:160px">
+                        <label class="small-muted">Empresa eléctrica</label>
+                        <select id="empresaSelect"></select>
+                    </div>
+                    <div style="flex:1;min-width:140px">
+                        <label class="small-muted">Segmento</label>
+                        <select id="segmentoSelect">
+                            <option value="N1">N1</option>
+                            <option value="N2">N2</option>
+                            <option value="N3">N3</option>
+                        </select>
+                    </div>
+                </div>
 
-    <div class="resultado-total">
-        <h2>Consumo Diario Estimado:</h2>
-        <p id="consumoTotal">0.000 kWh/día</p>
+                <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+                    <div style="flex:1">
+                        <label class="small-muted">Horas solares promedio (h/día)</label>
+                        <input type="number" id="horasSolaresInput" step="0.1" min="0" />
+                    </div>
+                    <div style="flex:1">
+                        <label class="small-muted">Tarifa ( $ / kWh )</label>
+                        <input type="number" id="tarifaInput" step="0.1" min="0" />
+                    </div>
+                    <div style="flex:1;min-width:160px">
+                        <label class="small-muted">Ajustar tarifa</label>
+                        <button id="actualizarTarifa" class="btn ghost">Aplicar</button>
+                    </div>
+                </div>
+                <div style="margin-top:8px" class="small-muted">
+                    Los valores por defecto son ejemplos. <b>Podes editarlos</b> aquí y se usarán en los cálculos.
+                </div>
+            </div>
+
+            <div class="panel" style="margin-top:12px">
+                <h3>2) Electrodomésticos</h3>
+                <button id="agregar-aparato" class="btn" style="background:var(--success)">➕ Agregar Aparato</button>
+
+                <div id="lista-aparatos" style="margin-top:12px"></div>
+
+                <div style="display:flex;gap:10px;margin-top:8px">
+                    <button id="calcular-total" class="btn primary">Calcular Consumo</button>
+                    <button id="limpiar" class="btn" style="background:#6c757d">Limpiar</button>
+                </div>
+
+                <div class="resultado-total" id="resultadoWrap" style="margin-top:12px">
+                    <h2>Resultados</h2>
+                    <div id="consumoResumen" class="small-muted">Consumo: 0.000 kWh/día • 0 kWh/mes • 0 kWh/año</div>
+                    <div id="costoResumen" class="small-muted" style="margin-top:6px">Costo estimado: $0 / mes</div>
+                </div>
+            </div>
+
+            <div class="panel" style="margin-top:12px">
+                <h3>3) Sugerencias y ranking</h3>
+                <ul id="listaSugerencias"></ul>
+                <h4>Ranking — mayor a menor (kWh/día)</h4>
+                <ol id="rankingAparatos"></ol>
+            </div>
+
+        </div>
+
+        <!-- RIGHT: gráficos y resumenes -->
+        <div class="right-col">
+            <div class="panel extra-section">
+                <h3>Gráfico de consumo por aparato</h3>
+                <canvas id="graficoConsumo" width="400" height="220"></canvas>
+            </div>
+
+            <div class="panel extra-section">
+                <h3>Dimensionamiento solar</h3>
+                <div id="dimensionSolar" class="small-muted">Necesitás: —</div>
+                <div style="margin-top:8px">
+                    <label class="small-muted">Escenario batería (opcional, % del consumo diario a almacenar)</label>
+                    <input type="number" id="porcentajeBackup" min="0" max="100" step="1" value="20" />
+                </div>
+            </div>
+
+            <div class="panel extra-section">
+                <h3>Compartir / Exportar</h3>
+                <div style="display:flex;gap:8px">
+                    <button id="compartirWhatsApp" class="btn" style="background:#25d366">Compartir WhatsApp</button>
+                    <button id="botonExportarPDF" class="btn" style="background:#6f42c1">Exportar PDF</button>
+                </div>
+            </div>
+
+        </div>
     </div>
 
-    <!-- === NUEVAS SECCIONES === -->
-
-    <div class="extra-section">
-        <h2>📊 Gráfico del Consumo</h2>
-        <canvas id="graficoConsumo"></canvas>
-    </div>
-
-    <div class="extra-section">
-        <h2>💡 Sugerencias para un Hogar Eficiente</h2>
-        <ul id="listaSugerencias"></ul>
-    </div>
-
-    <div class="extra-section">
-        <h2>🔆 Dimensionamiento Solar Estimado</h2>
-        <p id="dimensionSolar"></p>
-    </div>
-
-    <div class="extra-section">
-        <h2>💰 Costo Estimado según Tarifas Argentinas</h2>
-        <p id="costoArg"></p>
-    </div>
+    <footer>
+        <div class="small-muted">Datos por defecto: horas solares y tarifas son editables. Seleccioná subregión para poblar datos automáticos.</div>
+    </footer>
 
 </div>
 
-<!-- Botones de exportación -->
-<button id="exportarPDF">📄 Exportar PDF</button>
-<button id="compartirWhatsApp">📲 Compartir por WhatsApp</button>
-
 <script>
-    /* ================================
-       === FUNCIONES ORIGINALES ===
-    ================================ */
+/* ============================
+   Datos de ejemplo (editable)
+   ============================ */
 
-    document.addEventListener('DOMContentLoaded', () => {
-        agregarAparato('Nevera', 150, 24);
-        agregarAparato('Televisor', 120, 5);
-        agregarAparato('Foco LED (x4)', 40, 6);
+/*
+ Estructura: provincias -> subregiones (ciudades) -> empresas disponibles
+ También incluimos por defecto horas solares y tarifas ejemplo por empresa/segmento.
+ Los valores son ilustrativos: modificá en la UI según tu fuente.
+*/
+
+const DB = {
+    "Buenos Aires": {
+        regiones: {
+            "AMBA - Zona Norte": { horas: 4.2, empresas: ["EDENOR", "EDESUR"] },
+            "AMBA - Zona Sur": { horas: 4.0, empresas: ["EDESUR", "EDENOR"] },
+            "Bahía Blanca": { horas: 4.8, empresas: ["EDEA", "EDEA2"] }
+        }
+    },
+    "Córdoba": {
+        regiones: {
+            "Capital": { horas: 5.0, empresas: ["EPEC"] },
+            "Villa Carlos Paz": { horas: 5.1, empresas: ["EPEC"] }
+        }
+    },
+    "Mendoza": {
+        regiones: {
+            "Capital": { horas: 5.6, empresas: ["EDESAL", "EMESA"] }
+        }
+    },
+    "Santa Cruz / Patagonia": {
+        regiones: {
+            "Comodoro Rivadavia": { horas: 4.5, empresas: ["EPHE"] },
+            "Río Gallegos": { horas: 4.2, empresas: ["ERSA"] }
+        }
+    },
+    "Salta / NOA": {
+        regiones: {
+            "Salta": { horas: 5.4, empresas: ["ESSA"] },
+            "Jujuy": { horas: 5.6, empresas: ["JEMSE"] }
+        }
+    }
+};
+
+// Tarifas ejemplo por empresa y segmento (editable en la UI)
+// Estructura: tarifas[empresa][segmento] = $/kWh
+const tarifasEjemplo = {
+    "EDENOR": { "N1": 160, "N2": 120, "N3": 80 },
+    "EDESUR": { "N1": 165, "N2": 125, "N3": 85 },
+    "EPEC":   { "N1": 150, "N2": 110, "N3": 70 },
+    "EDEA":   { "N1": 155, "N2": 115, "N3": 75 },
+    "EDESAL": { "N1": 148, "N2": 108, "N3": 68 },
+    "EMESA":  { "N1": 152, "N2": 112, "N3": 72 },
+    "EPHE":   { "N1": 170, "N2": 130, "N3": 90 },
+    "ERESA":  { "N1": 160, "N2": 120, "N3": 80 },
+    "ESSA":   { "N1": 158, "N2": 118, "N3": 78 },
+    "JEMSE":  { "N1": 157, "N2": 117, "N3": 77 }
+};
+
+/* ============================
+   Referencias DOM
+   ============================ */
+
+const provinciaSelect = document.getElementById('provinciaSelect');
+const regionSelect = document.getElementById('regionSelect');
+const empresaSelect = document.getElementById('empresaSelect');
+const segmentoSelect = document.getElementById('segmentoSelect');
+const horasSolaresInput = document.getElementById('horasSolaresInput');
+const tarifaInput = document.getElementById('tarifaInput');
+const actualizarTarifaBtn = document.getElementById('actualizarTarifa');
+
+const agregarAparatoBtn = document.getElementById('agregar-aparato');
+const listaAparatos = document.getElementById('lista-aparatos');
+const calcularTotalBtn = document.getElementById('calcular-total');
+const limpiarBtn = document.getElementById('limpiar');
+
+const consumoResumen = document.getElementById('consumoResumen');
+const costoResumen = document.getElementById('costoResumen');
+const listaSugerencias = document.getElementById('listaSugerencias');
+const rankingAparatos = document.getElementById('rankingAparatos');
+const dimensionSolarEl = document.getElementById('dimensionSolar');
+const porcentajeBackupInput = document.getElementById('porcentajeBackup');
+
+const graficoCtx = document.getElementById('graficoConsumo').getContext('2d');
+let grafico; // chart
+
+const compartirWhatsAppBtn = document.getElementById('compartirWhatsApp');
+const botonExportarPDF = document.getElementById('botonExportarPDF');
+const exportarPDFheader = document.getElementById('exportarPDF');
+
+const toggleTheme = document.getElementById('toggleTheme');
+const appEl = document.getElementById('app');
+
+/* ============================
+   Inicialización UI
+   ============================ */
+
+function poblarProvincias(){
+    provinciaSelect.innerHTML = '';
+    Object.keys(DB).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p; opt.textContent = p;
+        provinciaSelect.appendChild(opt);
+    });
+}
+
+function poblarRegiones(prov){
+    regionSelect.innerHTML = '';
+    const regiones = DB[prov].regiones;
+    Object.keys(regiones).forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r; opt.textContent = r;
+        regionSelect.appendChild(opt);
+    });
+}
+
+function poblarEmpresas(prov, region){
+    empresaSelect.innerHTML = '';
+    const empresas = DB[prov].regiones[region].empresas || [];
+    empresas.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e; opt.textContent = e;
+        empresaSelect.appendChild(opt);
+    });
+}
+
+/* eventos para ir poblando y ajustar inputs por defecto */
+provinciaSelect.addEventListener('change', () => {
+    const prov = provinciaSelect.value;
+    poblarRegiones(prov);
+    poblarEmpresas(prov, regionSelect.value);
+    aplicarDatosRegion();
+});
+regionSelect.addEventListener('change', () => {
+    poblarEmpresas(provinciaSelect.value, regionSelect.value);
+    aplicarDatosRegion();
+});
+empresaSelect.addEventListener('change', () => {
+    aplicarDatosEmpresa();
+});
+segmentoSelect.addEventListener('change', () => {
+    aplicarDatosEmpresa();
+});
+
+function aplicarDatosRegion(){
+    const prov = provinciaSelect.value;
+    const reg = regionSelect.value;
+    const horas = DB[prov].regiones[reg].horas;
+    horasSolaresInput.value = horas;
+    aplicarDatosEmpresa();
+}
+
+function aplicarDatosEmpresa(){
+    const empresa = empresaSelect.value;
+    const segmento = segmentoSelect.value;
+    const tarifa = (tarifasEjemplo[empresa] && tarifasEjemplo[empresa][segmento]) ? tarifasEjemplo[empresa][segmento] : 150;
+    tarifaInput.value = tarifa;
+}
+
+/* poblar por primera vez */
+poblarProvincias();
+provinciaSelect.selectedIndex = 0;
+poblarRegiones(provinciaSelect.value);
+regionSelect.selectedIndex = 0;
+poblarEmpresas(provinciaSelect.value, regionSelect.value);
+empresaSelect.selectedIndex = 0;
+aplicarDatosRegion();
+
+/* ============================
+   Manejo de lista de aparatos
+   ============================ */
+
+function crearAparato(nombre = '', potencia = '', horas = ''){
+    const cont = document.createElement('div');
+    cont.className = 'apartado-item';
+    cont.innerHTML = `
+        <input class="inp-nombre" type="text" placeholder="Nombre del aparato (Ej: Heladera)" value="${nombre}">
+        <input class="inp-pot" type="number" placeholder="Potencia (W)" value="${potencia}">
+        <input class="inp-horas" type="number" placeholder="Horas/día" value="${horas}" min="0" max="24" step="0.1">
+        <button class="btn-elim">🗑️</button>
+    `;
+    cont.querySelector('.btn-elim').addEventListener('click', () => {
+        cont.remove();
+        calcularTotalConsumo();
+    });
+    listaAparatos.appendChild(cont);
+    return cont;
+}
+
+/* botones */
+agregarAparatoBtn.addEventListener('click', ()=> crearAparato('', '', ''));
+limpiarBtn.addEventListener('click', ()=>{
+    listaAparatos.innerHTML='';
+    consumoResumen.textContent = 'Consumo: 0.000 kWh/día • 0 kWh/mes • 0 kWh/año';
+    costoResumen.textContent = 'Costo estimado: $0 / mes';
+    listaSugerencias.innerHTML = '';
+    rankingAparatos.innerHTML = '';
+    if(grafico){ grafico.destroy(); grafico=null }
+    dimensionSolarEl.textContent = 'Necesitás: —';
+});
+
+/* precargar algunos aparatos */
+crearAparato('Heladera', 150, 24);
+createInitialLight();
+
+/* función auxiliar para agregar ejemplo de foco multiple */
+function createInitialLight(){
+    crearAparato('Foco LED (x4) - total 40W', 40, 6);
+    crearAparato('Televisor', 120, 5);
+}
+
+/* ============================
+   Cálculos centrales
+   ============================ */
+
+function calcularTotalConsumo(){
+    const items = Array.from(document.querySelectorAll('.apartado-item'));
+    let totalKwhDia = 0;
+    const detalles = [];
+
+    items.forEach(div => {
+        const nombre = div.querySelector('.inp-nombre').value || 'Sin nombre';
+        const pot = parseFloat(div.querySelector('.inp-pot').value) || 0;
+        const horas = parseFloat(div.querySelector('.inp-horas').value) || 0;
+        if(pot>0 && horas>=0){
+            const kwh = (pot * horas) / 1000;
+            totalKwhDia += kwh;
+            detalles.push({nombre, pot, horas, kwh});
+        }
     });
 
-    function agregarAparato(nombre = '', potencia = '', horas = '') {
-        const lista = document.getElementById('lista-aparatos');
+    // resumenes
+    const mensual = totalKwhDia * 30;
+    const anual = totalKwhDia * 365;
 
-        const div = document.createElement('div');
-        div.className = 'apartado-item';
+    consumoResumen.textContent = `Consumo: ${totalKwhDia.toFixed(3)} kWh/día • ${mensual.toFixed(1)} kWh/mes • ${anual.toFixed(1)} kWh/año`;
 
-        div.innerHTML = `
-            <input type="text" value="${nombre}" placeholder="Nombre">
-            <input type="number" value="${potencia}" placeholder="W">
-            <input type="number" value="${horas}" placeholder="Horas">
-            <button onclick="this.parentNode.remove(); calcularTotalConsumo()">🗑️</button>
-        `;
+    // costo
+    const tarifa = parseFloat(tarifaInput.value) || 0;
+    const costoMensual = mensual * tarifa;
+    costoResumen.textContent = `Costo estimado: $${Math.round(costoMensual).toLocaleString('es-AR')} / mes (tarifa ${tarifa.toFixed(2)} $/kWh)`;
 
-        lista.appendChild(div);
+    // ranking
+    const orden = detalles.slice().sort((a,b)=> b.kwh - a.kwh);
+    rankingAparatos.innerHTML = '';
+    orden.forEach(it=>{
+        const li = document.createElement('li');
+        li.textContent = `${it.nombre} — ${it.kwh.toFixed(3)} kWh/día`;
+        rankingAparatos.appendChild(li);
+    });
+
+    // sugerencias simples
+    generarSugerencias(totalKwhDia, orden);
+
+    // grafico
+    generarGrafico(detalles);
+
+    // dimensionamiento solar
+    calcularDimensionSolar(totalKwhDia, tarifa);
+
+    return {totalKwhDia, mensual, anual, costoMensual, detalles};
+}
+
+/* ============================
+   Sugerencias
+   ============================ */
+
+function generarSugerencias(totalKwhDia, orden){
+    listaSugerencias.innerHTML = '';
+    if(totalKwhDia <= 0){
+        listaSugerencias.innerHTML = '<li>Agregá electrodomésticos para calcular recomendaciones.</li>';
+        return;
     }
 
-    /* ==========================================
-       === CÁLCULO PRINCIPAL + FUNCIONES NUEVAS ===
-    ============================================= */
-
-    let chart; // gráfico global
-
-    function calcularTotalConsumo() {
-        let totalKwh = 0;
-        let nombres = [];
-        let consumos = [];
-
-        document.querySelectorAll('.apartado-item').forEach(item => {
-            const n = item.children[0].value;
-            const w = parseFloat(item.children[1].value);
-            const h = parseFloat(item.children[2].value);
-
-            if (w > 0 && h >= 0) {
-                const kwh = (w * h) / 1000;
-                totalKwh += kwh;
-
-                nombres.push(n);
-                consumos.push(kwh);
-            }
-        });
-
-        document.getElementById("consumoTotal").textContent =
-            totalKwh.toFixed(3) + " kWh/día";
-
-        generarGrafico(nombres, consumos);
-        generarSugerencias(totalKwh);
-        calcularSolar(totalKwh);
-        calcularCostoArgentino(totalKwh);
+    // Reglas simples
+    if(totalKwhDia > 8) addSug('Reducí el uso del aire acondicionado y ajustá a 24°C cuando sea posible.');
+    if(totalKwhDia > 5) addSug('Cambiá las lámparas por LED y usá reguladores/zonas de luz.');
+    if(totalKwhDia > 3) addSug('Revisá la eficiencia de la heladera y el sellado de puertas.');
+    if(totalKwhDia > 2) addSug('Usá regletas para apagar equipos en standby.');
+    if(totalKwhDayPercent := (orden[0] && (orden[0].kwh/totalKwhDia) > 0.4)) {
+        addSug(`El aparato ${orden[0].nombre} consume más del 40% del total — evaluá su reemplazo.`);
     }
+    if(totalKwhDia < 3) addSug('Tu hogar tiene consumo bajo. Podrías considerar un pequeño sistema solar para autogenerar parte de la energía.');
 
-    /* === Gráfico (Chart.js) === */
-    function generarGrafico(nombres, datos) {
-        const ctx = document.getElementById('graficoConsumo');
+    function addSug(txt){ const li=document.createElement('li'); li.textContent=txt; listaSugerencias.appendChild(li) }
+}
 
-        if (chart) chart.destroy();
+/* ============================
+   Gráfico (Chart.js)
+   ============================ */
 
-        chart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: nombres,
-                datasets: [{
-                    label: 'kWh por aparato',
-                    data: datos,
-                }]
-            }
-        });
-    }
+function generarGrafico(detalles){
+    const labels = detalles.map(d=>d.nombre);
+    const data = detalles.map(d=>parseFloat(d.kwh.toFixed(3)));
+    if(grafico) grafico.destroy();
 
-    /* === Sugerencias inteligentes === */
-    function generarSugerencias(total) {
-        const lista = document.getElementById("listaSugerencias");
-        lista.innerHTML = "";
-
-        if (total > 8) {
-            lista.innerHTML += "<li>Reducir uso del aire acondicionado o subirlo a 24°C.</li>";
+    grafico = new Chart(graficoCtx, {
+        type:'bar',
+        data: {
+            labels,
+            datasets:[{
+                label:'kWh por aparato (día)',
+                data,
+                backgroundColor: labels.map((_,i)=>`rgba(54,162,235,0.6)`),
+                borderColor: labels.map((_,i)=>`rgba(54,162,235,1)`),
+                borderWidth:1
+            }]
+        },
+        options:{
+            responsive:true,
+            scales:{ y: { beginAtZero:true } }
         }
-        if (total > 5) {
-            lista.innerHTML += "<li>Reemplazar iluminación por LED.</li>";
-        }
-        if (total > 3) {
-            lista.innerHTML += "<li>Revisar heladera (clase energética).</li>";
-        }
-        if (total < 3) {
-            lista.innerHTML += "<li>Excelente consumo. Tu hogar es eficiente.</li>";
-        }
-    }
+    });
+}
 
-    /* === Dimensionamiento solar === */
-    function calcularSolar(kwh) {
-        const horasSolarProm = 4.5; // promedio Argentina
-        const potencia = (kwh / horasSolarProm) * 1.3;
-        const paneles = Math.ceil(potencia / 0.45);
+/* ============================
+   Dimensionamiento solar y backup
+   ============================ */
 
-        document.getElementById("dimensionSolar").innerHTML =
-            `Necesitarías aproximadamente <b>${potencia.toFixed(2)} kW</b>
-             (~${paneles} paneles de 450W).`;
-    }
+function calcularDimensionSolar(kwhDia, tarifa){
+    const horasSolar = parseFloat(horasSolaresInput.value) || 4.5;
+    const eficienciaSistema = 1.3; // factor pérdidas
+    const potenciaKwp = (kwhDia / horasSolar) * eficienciaSistema; // kW pico
+    const panel450 = 0.45; // kW
+    const cantidadPaneles = Math.max(0, Math.ceil(potenciaKwp / panel450));
 
-    /* === Costo argentino promedio === */
-    function calcularCostoArgentino(kwhDia) {
-        const costoKwh = 180; // promedio tarifa argentina 2024
-        const mensual = kwhDia * 30 * costoKwh;
+    // Backup
+    const porcentajeBackup = parseFloat(porcentajeBackupInput.value) || 0;
+    const energiaBackupKwh = (kwhDia * (porcentajeBackup/100));
+    // suposición: queremos autonomía de 1 día de backup
+    const bateriaNecesariaKwh = energiaBackupKwh; // kWh
+    // conversión suelta para baterías: 1 kWh batería ~ 1 kWh usable (depende de sistema)
+    // mostrar resultados:
+    dimensionSolarEl.innerHTML = `
+        Con ${horasSolar} h/día promedio, necesitás aprox. <b>${potenciaKwp.toFixed(2)} kW</b> instalado
+        (~<b>${cantidadPaneles}</b> paneles de 450W).<br>
+        Si querés cubrir ${porcentajeBackup}% del consumo diario con batería, necesitás aprox. <b>${bateriaNecesariaKwh.toFixed(2)} kWh</b> de capacidad (1 día de autonomía).
+    `;
+}
 
-        document.getElementById("costoArg").innerHTML =
-            `Tu costo aproximado sería <b>$${mensual.toFixed(0)}</b> por mes.`;
-    }
+/* ============================
+   Event handlers: botones
+   ============================ */
 
-    /* === Exportar PDF === */
-    document.getElementById("exportarPDF").onclick = () => {
-        const elemento = document.getElementById("contentToExport");
+/* aplicar tarifa editable */
+actualizarTarifaBtn.addEventListener('click', ()=>{
+    const empresa = empresaSelect.value;
+    const segmento = segmentoSelect.value;
+    const tarifa = parseFloat(tarifaInput.value) || 0;
+    if(!tarifasEjemplo[empresa]) tarifasEjemplo[empresa] = {};
+    tarifasEjemplo[empresa][segmento] = tarifa;
+    alert(`Tarifa actualizada: ${empresa} ${segmento} = $${tarifa.toFixed(2)}/kWh (valor guardado en memoria local de esta sesión)`);
+});
 
-        html2pdf().set({
-            margin: 1,
-            filename: "reporte_energia.pdf",
-            html2canvas: { scale: 2 },
-        }).from(elemento).save();
-    };
+/* calcular */
+calcularTotalBtn.addEventListener('click', ()=>{
+    calcularTotalConsumo();
+});
 
-    /* === Compartir por WhatsApp === */
-    document.getElementById("compartirWhatsApp").onclick = () => {
-        const texto = document.getElementById("consumoTotal").innerText;
-        const url = "https://api.whatsapp.com/send?text=" +
-            encodeURIComponent("Mi consumo energético es: " + texto);
-        window.open(url, "_blank");
-    };
+/* compartir whatsapp */
+compartirWhatsAppBtn.addEventListener('click', ()=>{
+    const res = calcularTotalConsumo();
+    const texto = `Mi consumo estimado es ${res.totalKwhDia?.toFixed(3)||0} kWh/día (${(res.mensual||0).toFixed(1)} kWh/mes). Costo aprox. $${Math.round(res.costoMensual||0)} / mes.`;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+    window.open(url,'_blank');
+});
+
+/* exportar PDF (se captura todo el .app) */
+botonExportarPDF.addEventListener('click', ()=>{
+    const elemento = document.querySelector('.app');
+    html2pdf().set({ margin: 10, filename:'reporte_energia.pdf', html2canvas:{scale:2} }).from(elemento).save();
+});
+exportarPDFheader.addEventListener('click', ()=> botonExportarPDF.click());
+
+/* toggle theme */
+toggleTheme.addEventListener('change', (e)=>{
+    appEl.setAttribute('data-theme', e.target.checked ? 'dark' : 'light');
+});
+
+/* ============================
+   Acciones iniciales
+   ============================ */
+
+calcularTotalConsumo(); // primer cálculo con valores cargados
+
 </script>
 </body>
 </html>
-
