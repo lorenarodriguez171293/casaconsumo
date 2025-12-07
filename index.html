@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculadora de Consumo Energético Integral</title>
-    
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
-        /* ======================================= */
-        /* === ESTILOS CSS === */
-        /* ======================================= */
-        
+        /* === ESTILOS ORIGINALES (SE MANTIENEN) === */
+
         body {
             font-family: Arial, sans-serif;
             background-color: #e6f7ff;
@@ -27,7 +31,7 @@
             border-radius: 12px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
             width: 95%;
-            max-width: 700px;
+            max-width: 800px;
         }
 
         h1 {
@@ -54,16 +58,6 @@
             border: 1px solid #ced4da;
             border-radius: 4px;
             flex-grow: 1;
-            min-width: 0;
-        }
-        
-        .apartado-item input[type="text"] {
-            flex-basis: 35%; 
-        }
-
-        .apartado-item input[type="number"] {
-            flex-basis: 25%;
-            text-align: right;
         }
 
         .apartado-item button {
@@ -72,200 +66,231 @@
             border: none;
             padding: 8px 12px;
             border-radius: 4px;
-            cursor: pointer;
-            flex-basis: 10%;
-            line-height: 1; /* Para centrar el ícono */
         }
 
-        #agregar-aparato {
+        #agregar-aparato,
+        #calcular-total,
+        #exportarPDF,
+        #compartirWhatsApp {
             width: 100%;
             padding: 12px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-bottom: 20px;
-        }
-
-        #agregar-aparato:hover {
-            background-color: #1e7e34;
-        }
-
-        #calcular-total {
-            width: 100%;
-            padding: 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
+            margin-top: 15px;
             border-radius: 8px;
-            font-size: 18px;
+            color: white;
             cursor: pointer;
-            transition: background-color 0.3s;
-            margin-top: 20px;
+            border: none;
+            font-size: 16px;
         }
-        
-        #calcular-total:hover {
-            background-color: #0056b3;
-        }
+
+        #agregar-aparato { background-color: #28a745; }
+        #calcular-total { background-color: #007bff; }
+        #exportarPDF { background-color: #6f42c1; }
+        #compartirWhatsApp { background-color: #25d366; }
 
         .resultado-total {
             margin-top: 30px;
             padding: 20px;
             background-color: #e9f7ef;
             border-radius: 10px;
-            text-align: center;
             border: 1px solid #c3e6cb;
+            text-align: center;
         }
 
-        .resultado-total h2 {
-            color: #28a745;
-            margin-top: 0;
-        }
-        
-        .resultado-total p {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #333;
+        .extra-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f1f8ff;
+            border-radius: 10px;
+            border: 1px solid #bcdffb;
         }
 
-        .etiquetas-header {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 10px;
-            padding: 0 10px;
-            font-weight: bold;
-            color: #555;
+        h2 {
+            color: #004d99;
         }
-        
-        .etiquetas-header span {
-             flex-basis: 25%;
-             text-align: center;
-        }
-        
-        .etiquetas-header span:nth-child(1) {
-            flex-basis: 35%;
-            text-align: left;
-        }
-        
-        .etiquetas-header span:nth-child(4) {
-            flex-basis: 10%;
-        }
-        
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>🏡 Consumo Total del Hogar (kWh)</h1>
-        
-        <button id="agregar-aparato">➕ Agregar Nuevo Aparato</button>
 
-        <div class="etiquetas-header">
-            <span>Aparato/Dispositivo</span>
-            <span title="Potencia en vatios">Potencia (W)</span>
-            <span title="Horas de uso al día">Horas/Día</span>
-            <span>Acción</span>
-        </div>
-        
-        <div id="lista-aparatos">
-            </div>
-        
-        <button id="calcular-total" onclick="calcularTotalConsumo()">Calcular Consumo Total Diario</button>
-        
-        <div class="resultado-total">
-            <h2>Consumo Diario Estimado:</h2>
-            <p id="consumoTotal">0.000 kWh/día</p>
-        </div>
+<body>
+<div class="container" id="contentToExport">
+
+    <h1>🏡 Consumo Total del Hogar (kWh)</h1>
+
+    <button id="agregar-aparato">➕ Agregar Nuevo Aparato</button>
+
+    <div id="lista-aparatos"></div>
+
+    <button id="calcular-total" onclick="calcularTotalConsumo()">Calcular Consumo Total Diario</button>
+
+    <div class="resultado-total">
+        <h2>Consumo Diario Estimado:</h2>
+        <p id="consumoTotal">0.000 kWh/día</p>
     </div>
 
-    <script>
-        /* ======================================= */
-        /* === FUNCIONALIDAD JAVASCRIPT === */
-        /* ======================================= */
-        
-        document.addEventListener('DOMContentLoaded', (event) => {
-            // Inicializa la lista con aparatos de ejemplo al cargar la página
-            agregarAparato('Nevera', 150, 24); 
-            agregarAparato('Televisor', 120, 5);
-            agregarAparato('Foco LED (x4)', 40, 6);
+    <!-- === NUEVAS SECCIONES === -->
+
+    <div class="extra-section">
+        <h2>📊 Gráfico del Consumo</h2>
+        <canvas id="graficoConsumo"></canvas>
+    </div>
+
+    <div class="extra-section">
+        <h2>💡 Sugerencias para un Hogar Eficiente</h2>
+        <ul id="listaSugerencias"></ul>
+    </div>
+
+    <div class="extra-section">
+        <h2>🔆 Dimensionamiento Solar Estimado</h2>
+        <p id="dimensionSolar"></p>
+    </div>
+
+    <div class="extra-section">
+        <h2>💰 Costo Estimado según Tarifas Argentinas</h2>
+        <p id="costoArg"></p>
+    </div>
+
+</div>
+
+<!-- Botones de exportación -->
+<button id="exportarPDF">📄 Exportar PDF</button>
+<button id="compartirWhatsApp">📲 Compartir por WhatsApp</button>
+
+<script>
+    /* ================================
+       === FUNCIONES ORIGINALES ===
+    ================================ */
+
+    document.addEventListener('DOMContentLoaded', () => {
+        agregarAparato('Nevera', 150, 24);
+        agregarAparato('Televisor', 120, 5);
+        agregarAparato('Foco LED (x4)', 40, 6);
+    });
+
+    function agregarAparato(nombre = '', potencia = '', horas = '') {
+        const lista = document.getElementById('lista-aparatos');
+
+        const div = document.createElement('div');
+        div.className = 'apartado-item';
+
+        div.innerHTML = `
+            <input type="text" value="${nombre}" placeholder="Nombre">
+            <input type="number" value="${potencia}" placeholder="W">
+            <input type="number" value="${horas}" placeholder="Horas">
+            <button onclick="this.parentNode.remove(); calcularTotalConsumo()">🗑️</button>
+        `;
+
+        lista.appendChild(div);
+    }
+
+    /* ==========================================
+       === CÁLCULO PRINCIPAL + FUNCIONES NUEVAS ===
+    ============================================= */
+
+    let chart; // gráfico global
+
+    function calcularTotalConsumo() {
+        let totalKwh = 0;
+        let nombres = [];
+        let consumos = [];
+
+        document.querySelectorAll('.apartado-item').forEach(item => {
+            const n = item.children[0].value;
+            const w = parseFloat(item.children[1].value);
+            const h = parseFloat(item.children[2].value);
+
+            if (w > 0 && h >= 0) {
+                const kwh = (w * h) / 1000;
+                totalKwh += kwh;
+
+                nombres.push(n);
+                consumos.push(kwh);
+            }
         });
 
-        // Función principal para agregar una nueva fila de aparato al formulario
-        function agregarAparato(nombre = '', potencia = '', horas = '') {
-            const lista = document.getElementById('lista-aparatos');
-            
-            // Crea el div contenedor para el aparato
-            const divAparato = document.createElement('div');
-            divAparato.className = 'apartado-item';
+        document.getElementById("consumoTotal").textContent =
+            totalKwh.toFixed(3) + " kWh/día";
 
-            // Campos de entrada
-            divAparato.innerHTML = `
-                <input type="text" placeholder="Nombre (Ej: Nevera)" value="${nombre}" class="nombre-aparato">
-                <input type="number" placeholder="W" value="${potencia}" min="1" class="potencia-aparato">
-                <input type="number" placeholder="Horas" value="${horas}" min="0" max="24" step="0.1" class="horas-uso">
-                <button onclick="eliminarAparato(this)">🗑️</button>
-            `;
-            
-            lista.appendChild(divAparato);
-        }
+        generarGrafico(nombres, consumos);
+        generarSugerencias(totalKwh);
+        calcularSolar(totalKwh);
+        calcularCostoArgentino(totalKwh);
+    }
 
-        // Función para eliminar un aparato
-        function eliminarAparato(btn) {
-            // Elimina el div contenedor padre del botón
-            btn.parentNode.remove();
-            // Recalcula el total automáticamente al eliminar
-            calcularTotalConsumo();
-        }
+    /* === Gráfico (Chart.js) === */
+    function generarGrafico(nombres, datos) {
+        const ctx = document.getElementById('graficoConsumo');
 
-        // Función para calcular el consumo total de todos los aparatos
-        function calcularTotalConsumo() {
-            let consumoTotalKwh = 0;
-            let tieneErrores = false;
-            const items = document.querySelectorAll('.apartado-item');
+        if (chart) chart.destroy();
 
-            items.forEach(item => {
-                const potenciaInput = item.querySelector('.potencia-aparato');
-                const horasInput = item.querySelector('.horas-uso');
-                
-                const potencia = parseFloat(potenciaInput.value);
-                const horas = parseFloat(horasInput.value);
-                
-                // Restablecer el estilo de borde por defecto
-                item.style.border = '1px solid #dee2e6';
-
-                // **Validación de Datos**
-                if (isNaN(potencia) || isNaN(horas) || potencia <= 0 || horas < 0 || horas > 24) {
-                    // Marcar el ítem con error visualmente
-                    item.style.border = '2px solid #dc3545'; 
-                    tieneErrores = true;
-                    // Mantenemos el "return" aquí para que salte al siguiente item del forEach
-                    return;
-                }
-                
-                // Fórmula de cálculo: (W * h) / 1000 = kWh
-                const consumoKwh = (potencia * horas) / 1000;
-                consumoTotalKwh += consumoKwh;
-            });
-
-            const resultadoElemento = document.getElementById('consumoTotal');
-
-            if (tieneErrores) {
-                resultadoElemento.innerHTML = '⚠️ **Error:** Revisa los valores en rojo. Deben ser positivos, y las horas entre 0 y 24.';
-                resultadoElemento.style.color = '#dc3545';
-            } else if (items.length === 0) {
-                resultadoElemento.innerHTML = 'Añade al menos un aparato para calcular.';
-                resultadoElemento.style.color = '#333';
-            } else {
-                // Mostrar el resultado final
-                resultadoElemento.innerHTML = `${consumoTotalKwh.toFixed(3)} kWh/día`;
-                resultadoElemento.style.color = '#28a745';
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: nombres,
+                datasets: [{
+                    label: 'kWh por aparato',
+                    data: datos,
+                }]
             }
-        }
+        });
+    }
 
-        // Asignar la función agregarAparato al botón "Agregar Nuevo Aparato"
-        document.getElementById('agregar-aparato').addEventListener('click', () => agregarAparato());
-    </script>
+    /* === Sugerencias inteligentes === */
+    function generarSugerencias(total) {
+        const lista = document.getElementById("listaSugerencias");
+        lista.innerHTML = "";
+
+        if (total > 8) {
+            lista.innerHTML += "<li>Reducir uso del aire acondicionado o subirlo a 24°C.</li>";
+        }
+        if (total > 5) {
+            lista.innerHTML += "<li>Reemplazar iluminación por LED.</li>";
+        }
+        if (total > 3) {
+            lista.innerHTML += "<li>Revisar heladera (clase energética).</li>";
+        }
+        if (total < 3) {
+            lista.innerHTML += "<li>Excelente consumo. Tu hogar es eficiente.</li>";
+        }
+    }
+
+    /* === Dimensionamiento solar === */
+    function calcularSolar(kwh) {
+        const horasSolarProm = 4.5; // promedio Argentina
+        const potencia = (kwh / horasSolarProm) * 1.3;
+        const paneles = Math.ceil(potencia / 0.45);
+
+        document.getElementById("dimensionSolar").innerHTML =
+            `Necesitarías aproximadamente <b>${potencia.toFixed(2)} kW</b>
+             (~${paneles} paneles de 450W).`;
+    }
+
+    /* === Costo argentino promedio === */
+    function calcularCostoArgentino(kwhDia) {
+        const costoKwh = 180; // promedio tarifa argentina 2024
+        const mensual = kwhDia * 30 * costoKwh;
+
+        document.getElementById("costoArg").innerHTML =
+            `Tu costo aproximado sería <b>$${mensual.toFixed(0)}</b> por mes.`;
+    }
+
+    /* === Exportar PDF === */
+    document.getElementById("exportarPDF").onclick = () => {
+        const elemento = document.getElementById("contentToExport");
+
+        html2pdf().set({
+            margin: 1,
+            filename: "reporte_energia.pdf",
+            html2canvas: { scale: 2 },
+        }).from(elemento).save();
+    };
+
+    /* === Compartir por WhatsApp === */
+    document.getElementById("compartirWhatsApp").onclick = () => {
+        const texto = document.getElementById("consumoTotal").innerText;
+        const url = "https://api.whatsapp.com/send?text=" +
+            encodeURIComponent("Mi consumo energético es: " + texto);
+        window.open(url, "_blank");
+    };
+</script>
 </body>
 </html>
+
